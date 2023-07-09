@@ -29,6 +29,7 @@ class ConversationalRetrievalQAChain_Chains implements INode {
     baseClasses: string[]
     description: string
     inputs: INodeParams[]
+    memory: BufferMemory | null = null
 
     constructor() {
         this.label = 'Conversational Retrieval QA Chain'
@@ -100,18 +101,22 @@ class ConversationalRetrievalQAChain_Chains implements INode {
         const returnSourceDocuments = nodeData.inputs?.returnSourceDocuments as boolean
         const chainOption = nodeData.inputs?.chainOption as string
 
+        if (!this.memory) {
+            this.memory = new BufferMemory({
+                memoryKey: 'chat_history',
+                inputKey: 'question',
+                outputKey: 'text',
+                returnMessages: true
+            })
+        }
+
         const obj: any = {
             verbose: process.env.DEBUG === 'true' ? true : false,
             qaChainOptions: {
                 type: 'stuff',
                 prompt: PromptTemplate.fromTemplate(systemMessagePrompt ? `${systemMessagePrompt}\n${qa_template}` : default_qa_template)
             },
-            memory: new BufferMemory({
-                memoryKey: 'chat_history',
-                inputKey: 'question',
-                outputKey: 'text',
-                returnMessages: true
-            })
+            memory: this.memory
         }
         if (returnSourceDocuments) obj.returnSourceDocuments = returnSourceDocuments
         if (chainOption) obj.qaChainOptions = { ...obj.qaChainOptions, type: chainOption }
@@ -161,3 +166,5 @@ class ConversationalRetrievalQAChain_Chains implements INode {
 }
 
 module.exports = { nodeClass: ConversationalRetrievalQAChain_Chains }
+
+
